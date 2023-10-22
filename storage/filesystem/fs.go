@@ -92,7 +92,7 @@ func (s *StorageFs) GetFile(packageName, filename, hash string) ([]byte, int) {
 	return file, 200
 }
 
-func (s *StorageFs) PutFile(packageName, filename string, content []byte) (string, error) {
+func (s *StorageFs) PutFile(packageName, filename string, content []byte, hash string) error {
 	// Normalize package name and filename
 	packageName = utilities.Normalize(packageName)
 	filename = utilities.Normalize(filename)
@@ -100,30 +100,28 @@ func (s *StorageFs) PutFile(packageName, filename string, content []byte) (strin
 	if _, err := os.Stat("repo/" + packageName); os.IsNotExist(err) {
 		err = os.Mkdir("repo/"+packageName, 0755)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 	// Create hashes folder if it doesn't exist
 	if _, err := os.Stat("repo/" + packageName + "/hashes"); os.IsNotExist(err) {
 		err = os.Mkdir("repo/"+packageName+"/hashes", 0755)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 	// Check if the file already exists
 	if _, err := os.Stat("repo/" + packageName + "/" + filename); !os.IsNotExist(err) {
-		return "", errors.New("file already exists")
+		return errors.New("file already exists")
 	}
 	// Write file
 	err := os.WriteFile("repo/"+packageName+"/"+filename, content, 0644)
 	if err != nil {
-		return "", err
+		return err
 	}
-	// Write hash
-	hash := utilities.Hash(content)
 	err = os.WriteFile("repo/"+packageName+"/hashes/"+filename+".sha256", []byte(hash), 0644)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return hash, nil
+	return nil
 }

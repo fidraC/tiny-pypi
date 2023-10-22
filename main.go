@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"pypi/config"
 	"pypi/storage"
@@ -66,6 +67,34 @@ func main() {
 			return
 		}
 		c.Data(200, "application/octet-stream", file)
+	})
+
+	r.POST("/", func(c *gin.Context) {
+		file, err := c.FormFile("content")
+		if err != nil {
+			c.String(500, "Error getting file")
+			return
+		}
+		fileContent, err := file.Open()
+		if err != nil {
+			c.String(500, "Error opening file")
+			return
+		}
+		fileData, err := io.ReadAll(fileContent)
+		if err != nil {
+			c.String(500, "Error reading file")
+			return
+		}
+		sha256Digest := c.PostForm("sha256_digest")
+		packageName := c.PostForm("name")
+		// Save file
+		err = store.PutFile(packageName,file.Filename, fileData, sha256Digest)
+		if err != nil {
+			c.String(500, err.Error())
+			return
+		}
+		c.String(200, "OK")
+		
 	})
 
 	r.Run()
